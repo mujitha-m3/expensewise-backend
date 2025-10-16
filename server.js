@@ -89,31 +89,15 @@ const connectDB = async () => {
   }
 };
 
-// Graceful shutdown
-const gracefulShutdown = async () => {
-  console.log('Shutting down gracefully...');
-
-  try {
-    await mongoose.connection.close();
-    console.log('MongoDB connection closed.');
-    process.exit(0);
-  } catch (error) {
-    console.error('Error during shutdown:', error);
-    process.exit(1);
-  }
-};
-
-process.on('SIGINT', gracefulShutdown);
-process.on('SIGTERM', gracefulShutdown);
-
 // Start server
 const startServer = async () => {
   try {
     await connectDB();
 
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });
+
   } catch (error) {
     console.error('Failed to start server:', error);
     process.exit(1);
