@@ -7,25 +7,25 @@ Complete REST API backend for the ExpenseWise mobile application - Final project
 - Asitha Govinnage  
 - Mujitha Manorathna
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 - Node.js 16+ 
 - npm 8+
+- MongoDB Atlas account (or local MongoDB)
 
 ### Installation
 ```bash
-# Navigate to backend directory
-cd backend-template
+# Clone the repository
+git clone https://github.com/mujitha-m3/expensewise-backend.git
+cd expensewise-backend
 
 # Install dependencies
 npm install
 
-# Copy environment variables
-cp .env.example .env
-
-# Edit .env file with your configuration
-# Update JWT secrets, database paths, etc.
+# Set up environment variables
+# Create .env file with your MongoDB connection string and JWT secrets
+# See Environment Variables section below
 
 # Start development server
 npm run dev
@@ -36,39 +36,12 @@ npm run dev
 npm start
 ```
 
-## 📁 Project Structure
-
-```
-backend-template/
-├── server.js                 # Main application entry point
-├── package.json              # Dependencies and scripts
-├── .env.example              # Environment variables template
-├── .gitignore               # Git ignore rules
-├── README.md                # This file
-├── database/                # SQLite database files (auto-created)
-└── src/
-    ├── config/
-    │   └── database.js       # Database connection & schema
-    ├── controllers/
-    │   └── authController.js # Authentication logic
-    ├── middleware/
-    │   ├── auth.js          # JWT authentication middleware
-    │   └── errorHandler.js  # Global error handling
-    ├── routes/
-    │   └── auth.js          # Authentication routes
-    ├── services/
-    │   └── userService.js   # User business logic
-    └── utils/
-        ├── jwt.js           # JWT token utilities
-        └── password.js      # Password hashing utilities
-```
-
-## 🔐 Authentication System
+## Authentication System
 
 ### Features
-- **JWT-based authentication** with access & refresh tokens
+- **JWT-based authentication** with secure tokens
 - **Secure password hashing** using bcrypt (12 salt rounds)
-- **Token management** with automatic cleanup
+- **Token management** with expiration
 - **Password strength validation**
 - **Email validation**
 - **Session management** across devices
@@ -78,58 +51,71 @@ backend-template/
 - CORS protection
 - Helmet security headers
 - Input validation and sanitization
-- SQL injection protection
+- NoSQL injection protection
 - Password complexity requirements
 
-## 📊 Database Schema
+## Database Schema (MongoDB)
 
-### Users Table
-- **id** (Primary Key)
+### Users Collection
+- **_id** (MongoDB ObjectId)
 - **email** (Unique, validated)
-- **password_hash** (bcrypt hashed)
+- **password** (bcrypt hashed)
 - **name** (User display name)
 - **currency** (Default: LKR)
-- **is_active** (Account status)
-- **email_verified** (Email verification status)
-- **created_at** / **updated_at** (Timestamps)
+- **isActive** (Account status)
+- **createdAt** / **updatedAt** (Timestamps)
 
-### Refresh Tokens Table
-- **id** (Primary Key)
-- **user_id** (Foreign Key → users.id)
-- **token** (JWT refresh token)
-- **expires_at** (Token expiration)
-- **created_at** (Creation timestamp)
+### Categories Collection
+- **_id** (MongoDB ObjectId)
+- **name** (Category name)
+- **type** (income/expense)
+- **color** (Hex color code)
+- **icon** (Icon identifier)
+- **userId** (Reference to User)
+- **createdAt** / **updatedAt** (Timestamps)
 
-### Default Categories (Pre-populated)
-- Food & Dining, Transportation, Shopping
-- Entertainment, Bills & Utilities, Healthcare
-- Education, Other (with colors & icons)
+### Expenses Collection
+- **_id** (MongoDB ObjectId)
+- **amount** (Expense amount)
+- **description** (Description)
+- **categoryId** (Reference to Category)
+- **userId** (Reference to User)
+- **date** (Expense date)
+- **createdAt** / **updatedAt** (Timestamps)
 
-## 🛣️ API Endpoints
+### Income Collection
+- **_id** (MongoDB ObjectId)
+- **amount** (Income amount)
+- **description** (Description)
+- **categoryId** (Reference to Category)
+- **userId** (Reference to User)
+- **date** (Income date)
+- **createdAt** / **updatedAt** (Timestamps)
+
+## API Endpoints
 
 ### Base URL
 ```
-http://localhost:3000/api/v1
+http://localhost:3000/api
 ```
 
 ### Authentication Endpoints
 
 #### Register User
 ```http
-POST /auth/register
+POST /api/auth/register
 Content-Type: application/json
 
 {
   "email": "user@example.com",
   "password": "SecurePass123!",
-  "name": "John Doe",
-  "currency": "LKR"
+  "name": "John Doe"
 }
 ```
 
 #### Login User
 ```http
-POST /auth/login
+POST /api/auth/login
 Content-Type: application/json
 
 {
@@ -138,59 +124,77 @@ Content-Type: application/json
 }
 ```
 
-#### Refresh Token
-```http
-POST /auth/refresh
-Content-Type: application/json
+### Expense Endpoints
 
-{
-  "refreshToken": "jwt_refresh_token_here"
-}
-```
-
-#### Get Profile
+#### Get All Expenses
 ```http
-GET /auth/profile
+GET /api/expenses
 Authorization: Bearer jwt_access_token_here
 ```
 
-#### Update Profile
+#### Create Expense
 ```http
-PUT /auth/profile
+POST /api/expenses
 Authorization: Bearer jwt_access_token_here
 Content-Type: application/json
 
 {
-  "name": "Updated Name",
-  "currency": "USD"
+  "amount": 25.50,
+  "description": "Coffee and lunch",
+  "categoryId": "category_id_here",
+  "date": "2025-10-16"
 }
 ```
 
-#### Change Password
+### Income Endpoints
+
+#### Get All Income
 ```http
-POST /auth/change-password
+GET /api/income
+Authorization: Bearer jwt_access_token_here
+```
+
+#### Create Income
+```http
+POST /api/income
 Authorization: Bearer jwt_access_token_here
 Content-Type: application/json
 
 {
-  "currentPassword": "OldPass123!",
-  "newPassword": "NewPass123!"
+  "amount": 1500.00,
+  "description": "Freelance work",
+  "categoryId": "category_id_here",
+  "date": "2025-10-16"
 }
 ```
 
-#### Logout
+### Category Endpoints
+
+#### Get All Categories
 ```http
-POST /auth/logout
+GET /api/categories
+Authorization: Bearer jwt_access_token_here
+```
+
+#### Create Category
+```http
+POST /api/categories
+Authorization: Bearer jwt_access_token_here
 Content-Type: application/json
 
 {
-  "refreshToken": "jwt_refresh_token_here"
+  "name": "Groceries",
+  "type": "expense",
+  "color": "#FF6B6B",
+  "icon": "shopping-cart"
 }
 ```
 
-#### Logout All Devices
+### Analytics Endpoints
+
+#### Get Financial Summary
 ```http
-POST /auth/logout-all
+GET /api/analytics/summary
 Authorization: Bearer jwt_access_token_here
 ```
 
@@ -202,8 +206,8 @@ Authorization: Bearer jwt_access_token_here
   "success": true,
   "message": "Operation completed successfully",
   "data": {
-    "user": { ... },
-    "tokens": { ... }
+    "expenses": [...],
+    "total": 1250.75
   }
 }
 ```
@@ -216,59 +220,51 @@ Authorization: Bearer jwt_access_token_here
   "errors": {
     "field": "Specific field error"
   },
-  "timestamp": "2024-01-20T10:30:00.000Z"
+  "timestamp": "2025-10-16T10:30:00.000Z"
 }
 ```
 
 ## 🔧 Environment Variables
 
-Copy `.env.example` to `.env` and configure:
+Create a `.env` file in the root directory:
 
 ```env
 # Server Configuration
 NODE_ENV=development
 PORT=3000
-API_VERSION=v1
+
+# MongoDB Configuration
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/expensewise?retryWrites=true&w=majority
 
 # JWT Configuration
-JWT_SECRET=your-super-secret-jwt-key-here
-JWT_REFRESH_SECRET=your-super-secret-refresh-key-here
-JWT_EXPIRES_IN=15m
-JWT_REFRESH_EXPIRES_IN=7d
+JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+JWT_EXPIRE=7d
 
-# Database Configuration
-DB_PATH=./database/expensewise.db
-
-# CORS Configuration
-CORS_ORIGIN=http://localhost:8081,exp://localhost:8081
+# Security
+BCRYPT_ROUNDS=12
 
 # Rate Limiting
-RATE_LIMIT_WINDOW=15
-RATE_LIMIT_MAX=100
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX_REQUESTS=100
+
+# CORS Configuration (comma separated)
+CORS_ORIGIN=http://localhost:3000,http://localhost:19006
 ```
 
-## 🔄 Integration with Mobile App
+## Integration with Mobile App
 
 ### Mobile App Configuration
-Update your mobile app's `src/services/api/apiService.js`:
+Update your mobile app's API service configuration:
 
 ```javascript
-// Change API_BASE_URL to your backend
-const API_BASE_URL = 'http://your-backend-ip:3000/api/v1';
+// Update API_BASE_URL to your backend
+const API_BASE_URL = 'http://your-backend-ip:3000/api';
 
-// Your mobile app is already configured to work with this API!
-// Just update the base URL and you're ready to go.
+// Your mobile app can now connect to this API!
+// Make sure to include JWT tokens in Authorization headers
 ```
 
-### Switching from Local to API Mode
-In your mobile app's `src/services/auth/hybridAuthService.js`:
-
-```javascript
-// Change mode from 'local' to 'api'
-let currentMode = 'api'; // Was 'local'
-```
-
-## 🧪 Testing
+## Testing
 
 ### Manual Testing
 ```bash
@@ -276,109 +272,27 @@ let currentMode = 'api'; // Was 'local'
 curl http://localhost:3000/health
 
 # Register user
-curl -X POST http://localhost:3000/api/v1/auth/register \
+curl -X POST http://localhost:3000/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com","password":"Test123!","name":"Test User"}'
 
 # Login user
-curl -X POST http://localhost:3000/api/v1/auth/login \
+curl -X POST http://localhost:3000/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com","password":"Test123!"}'
 ```
 
-### Automated Testing
-```bash
-npm test                # Run tests
-npm run test:watch      # Watch mode
-npm run test:coverage   # Coverage report
-```
+## Features Implemented
 
-## 🚀 Production Deployment
+**Authentication System** - JWT-based auth with secure password hashing  
+**Expense Management** - CRUD operations for expenses  
+**Income Management** - CRUD operations for income  
+**Category Management** - Organize expenses and income by categories  
+**Analytics** - Financial summaries and insights  
+**Security** - Rate limiting, CORS, input validation  
+**MongoDB Integration** - Mongoose ODM with proper schemas  
 
-### Using PM2
-```bash
-npm install -g pm2
-pm2 start server.js --name "expensewise-api"
-pm2 save
-pm2 startup
-```
-
-### Using Docker
-```dockerfile
-FROM node:18-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --only=production
-COPY . .
-EXPOSE 3000
-CMD ["npm", "start"]
-```
-
-### Environment Setup
-1. Set `NODE_ENV=production`
-2. Use strong JWT secrets (64+ characters)
-3. Configure proper CORS origins
-4. Set up reverse proxy (nginx/apache)
-5. Enable HTTPS
-6. Configure monitoring and logging
-
-## 🛠️ Development Scripts
-
-```bash
-npm run dev          # Start with nodemon
-npm run lint         # Check code style
-npm run lint:fix     # Fix code style issues
-npm run cleanup:tokens # Clean expired tokens manually
-```
-
-## 🔍 Troubleshooting
-
-### Common Issues
-
-1. **Database Connection Error**
-   - Ensure database directory exists
-   - Check file permissions
-   - Verify SQLite3 installation
-
-2. **JWT Token Error**
-   - Check JWT secrets in .env
-   - Verify token expiration settings
-   - Ensure proper token format
-
-3. **CORS Issues**
-   - Update CORS_ORIGIN in .env
-   - Include mobile app URLs
-   - Check protocol (http/https)
-
-### Debug Mode
-Set `NODE_ENV=development` for detailed error messages and stack traces.
-
-## 📚 Next Steps
-
-1. **Extend API**: Add expense, income, category endpoints
-2. **Add Validation**: Implement request validation middleware  
-3. **Add Logging**: Structured logging with winston
-4. **Add Monitoring**: Health checks and metrics
-5. **Add Documentation**: Swagger/OpenAPI specs
-6. **Add Testing**: Unit and integration tests
-
-## 🤝 Team Collaboration
-
-### Git Workflow
-1. Create feature branches: `feature/api-expenses`
-2. Make commits with clear messages
-3. Test before pushing
-4. Create pull requests for review
-5. Merge to main after approval
-
-### Code Standards
-- Use consistent formatting (eslint)
-- Add comments for complex logic
-- Follow RESTful API conventions
-- Maintain security best practices
-
----
 
 **Built with ❤️ by the ExpenseWise Team**
 
-*This backend perfectly complements your React Native mobile app and provides a solid foundation for your final project demonstration.*
+*This backend provides a complete API for the ExpenseWise React Native mobile application with MongoDB Atlas integration and comprehensive expense management features.*
