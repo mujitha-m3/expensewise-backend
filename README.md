@@ -31,27 +31,20 @@ npm install
 npm run dev
 ```
 
-### Production Start
-```bash
-npm start
-```
-
 ## Authentication System
 
 ### Features
 - **JWT-based authentication** with secure tokens
-- **Secure password hashing** using bcrypt (12 salt rounds)
+- **Secure password hashing** using bcrypt 
 - **Token management** with expiration
 - **Password strength validation**
 - **Email validation**
 - **Session management** across devices
 
 ### Security Features
-- Rate limiting (100 requests per 15 minutes)
 - CORS protection
 - Helmet security headers
 - Input validation and sanitization
-- NoSQL injection protection
 - Password complexity requirements
 
 ## Database Schema (MongoDB)
@@ -254,32 +247,14 @@ CORS_ORIGIN=http://localhost:3000,http://localhost:19006
 ## Integration with Mobile App
 
 ### Mobile App Configuration
-Update your mobile app's API service configuration:
+Update mobile app's API service configuration:
 
 ```javascript
 // Update API_BASE_URL to your backend
 const API_BASE_URL = 'http://your-backend-ip:3000/api';
 
-// Your mobile app can now connect to this API!
+// mobile app can now connect to this API!
 // Make sure to include JWT tokens in Authorization headers
-```
-
-## Testing
-
-### Manual Testing
-```bash
-# Health check
-curl http://localhost:3000/health
-
-# Register user
-curl -X POST http://localhost:3000/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","password":"Test123!","name":"Test User"}'
-
-# Login user
-curl -X POST http://localhost:3000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","password":"Test123!"}'
 ```
 
 ## Features Implemented
