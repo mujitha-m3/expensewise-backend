@@ -230,7 +230,7 @@ PORT=3000
 MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/expensewise?retryWrites=true&w=majority
 
 # JWT Configuration
-JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+JWT_SECRET=secret-jwt-key
 JWT_EXPIRE=7d
 
 # Security
