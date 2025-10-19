@@ -54,51 +54,7 @@ router.get("/", authMiddleware, async (req, res) => {
     console.error("Get incomes error:", error);
     res.status(500).json({ error: "Failed to fetch income records" });
   }
-});
 
-// Get income by ID
-router.get("/:id", authMiddleware, async (req, res) => {
-  try {
-    const income = await Income.findOne({
-      _id: req.params.id,
-      userId: req.userId
-    });
-    
-    if (!income) {
-      return res.status(404).json({ error: "Income record not found" });
-    }
-    
-    res.json(income);
-  } catch (error) {
-    console.error("Get income error:", error);
-    res.status(500).json({ error: "Failed to fetch income record" });
-  }
-});
-
-// Create new income record
-router.post("/", authMiddleware, validateIncome, async (req, res) => {
-  try {
-    const incomeData = {
-      ...req.body,
-      userId: req.userId
-    };
-    
-    const income = new Income(incomeData);
-    await income.save();
-    
-    res.status(201).json({
-      message: "Income record created successfully",
-      income
-    });
-  } catch (error) {
-    console.error("Create income error:", error);
-    res.status(500).json({ error: "Failed to create income record" });
-  }
-});
-
-// Update income record
-router.put("/:id", authMiddleware, validateIncome, async (req, res) => {
-  try {
     const income = await Income.findOneAndUpdate(
       { _id: req.params.id, userId: req.userId },
       req.body,
