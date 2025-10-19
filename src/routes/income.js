@@ -1,6 +1,6 @@
 const express = require("express");
 const { Income } = require("../models");
-const { authMiddleware, validateIncome } = require("../middleware");
+const { authMiddleware } = require("../middleware");
 
 const router = express.Router();
 
@@ -54,10 +54,103 @@ router.get("/", authMiddleware, async (req, res) => {
     console.error("Get incomes error:", error);
     res.status(500).json({ error: "Failed to fetch income records" });
   }
+});
+
+// Get income by ID
+router.get("/:id", authMiddleware, async (req, res) => {
+  try {
+    const income = await Income.findOne({
+      _id: req.params.id,
+      userId: req.userId
+    });
+    
+    if (!income) {
+      return res.status(404).json({ error: "Income record not found" });
+    }
+    
+    res.json(income);
+  } catch (error) {
+    console.error("Get income error:", error);
+    res.status(500).json({ error: "Failed to fetch income record" });
+  }
+});
+
+// Create new income record
+router.post("/", authMiddleware, async (req, res) => {
+  try {
+    // Map field names to match schema
+    const incomeData = { ...req.body, userId: req.userId };
+    
+    // Map startDate to date if provided
+    if (incomeData.startDate) {
+      incomeData.date = incomeData.startDate;
+      delete incomeData.startDate;
+    }
+    
+    // Map frequency to recurringFrequency if provided
+    if (incomeData.frequency) {
+      incomeData.recurringFrequency = incomeData.frequency;
+      delete incomeData.frequency;
+    }
+    
+    // Validate amount
+    if (!incomeData.amount || incomeData.amount <= 0) {
+      return res.status(400).json({ 
+        error: "Amount must be greater than 0" 
+      });
+    }
+
+    const income = new Income(incomeData);
+    await income.save();
+    
+    res.status(201).json({
+      message: "Income record created successfully",
+      income
+    });
+  } catch (error) {
+    console.error("Create income error:", error);
+    
+    // Handle validation errors
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({ 
+        error: "Validation error", 
+        details: errors 
+      });
+    }
+    
+    res.status(500).json({ error: "Failed to create income record" });
+  }
+});
+
+// Update income record
+router.put("/:id", authMiddleware, async (req, res) => {
+  try {
+    // Map field names to match schema (same as in controller)
+    const updateData = { ...req.body };
+    
+    // Map startDate to date if provided
+    if (updateData.startDate) {
+      updateData.date = updateData.startDate;
+      delete updateData.startDate;
+    }
+    
+    // Map frequency to recurringFrequency if provided
+    if (updateData.frequency) {
+      updateData.recurringFrequency = updateData.frequency;
+      delete updateData.frequency;
+    }
+    
+    // Validate amount if provided
+    if (updateData.amount && updateData.amount <= 0) {
+      return res.status(400).json({ 
+        error: "Amount must be greater than 0" 
+      });
+    }
 
     const income = await Income.findOneAndUpdate(
       { _id: req.params.id, userId: req.userId },
-      req.body,
+      updateData,
       { new: true, runValidators: true }
     );
     
@@ -71,6 +164,23 @@ router.get("/", authMiddleware, async (req, res) => {
     });
   } catch (error) {
     console.error("Update income error:", error);
+    
+    // Handle validation errors
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({ 
+        error: "Validation error", 
+        details: errors 
+      });
+    }
+    
+    // Handle invalid ObjectId
+    if (error.name === 'CastError') {
+      return res.status(400).json({ 
+        error: "Invalid income ID format" 
+      });
+    }
+    
     res.status(500).json({ error: "Failed to update income record" });
   }
 });
