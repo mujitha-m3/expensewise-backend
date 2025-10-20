@@ -13,6 +13,7 @@ const {
   incomeRoutes,
   categoryRoutes,
   analyticsRoutes,
+  allocationRoutes, // Add allocation routes
 } = require('./src/routes');
 
 // Import middleware
@@ -48,6 +49,7 @@ app.use('/api/expenses', expenseRoutes);
 app.use('/api/income', incomeRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/allocations', allocationRoutes); // Add allocation routes
 
 // Root endpoint
 app.get('/', (req, res) => {
@@ -60,6 +62,7 @@ app.get('/', (req, res) => {
       income: '/api/income',
       categories: '/api/categories',
       analytics: '/api/analytics',
+      allocations: '/api/allocations', // Add allocations endpoint
     },
   });
 });
@@ -70,7 +73,8 @@ app.get('/health', (req, res) => {
     status: 'OK',
     message: 'ExpenseWise API is running',
     timestamp: new Date().toISOString(),
-    uptime: process.uptime()
+    uptime: process.uptime(),
+    database: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected'
   });
 });
 
@@ -80,14 +84,31 @@ app.use(errorHandler);
 // MongoDB connection
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(process.env.MONGODB_URI);
+    const conn = await mongoose.connect(process.env.MONGODB_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
 
     console.log(`MongoDB Connected: ${conn.connection.host}`);
+    console.log(`Database: ${conn.connection.name}`);
   } catch (error) {
     console.error('MongoDB connection error:', error);
     process.exit(1);
   }
 };
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (err, promise) => {
+  console.log('Unhandled Rejection at:', promise, 'reason:', err);
+  // Close server & exit process
+  process.exit(1);
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (err) => {
+  console.log('Uncaught Exception thrown:', err);
+  process.exit(1);
+});
 
 // Start server
 const startServer = async () => {
@@ -95,7 +116,17 @@ const startServer = async () => {
     await connectDB();
 
     const server = app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
+      console.log(`🚀 Server running on port ${PORT}`);
+      console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`🔗 API Base URL: http://localhost:${PORT}/api`);
+    });
+
+    // Graceful shutdown
+    process.on('SIGTERM', () => {
+      console.log('SIGTERM received, shutting down gracefully');
+      server.close(() => {
+        console.log('Process terminated');
+      });
     });
 
   } catch (error) {
