@@ -1,23 +1,33 @@
-# Use Node.js LTS version
-FROM node:20-alpine
+# Multi-stage build for smaller production image
 
-# Set working directory
+# Build stage (install dependencies)
+FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Copy package files
+# Install build deps
 COPY package*.json ./
-
-# Install dependencies
 RUN npm ci --only=production
 
-# Copy application code
+# Copy app files
 COPY . .
 
-# Expose port (Cloud Run will set PORT env variable)
+# Final stage (runtime)
+FROM node:20-alpine AS runtime
+WORKDIR /app
+
+# Create a non-root user
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+# Copy only production deps and app from builder
+COPY --from=builder /app /app
+
+# Use non-root
+USER appuser
+
+# Default port (Cloud Run will override via PORT env)
+ENV PORT=8080
 EXPOSE 8080
 
-# Set environment to production
 ENV NODE_ENV=production
 
-# Start the application
 CMD ["node", "server.js"]
