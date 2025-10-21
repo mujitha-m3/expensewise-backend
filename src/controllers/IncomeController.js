@@ -1,6 +1,6 @@
 const Income = require("../models/Income");
 
-// ✅ Create a new income
+// Create a new income
 exports.createIncome = async (req, res) => {
   try {
     const { 
@@ -71,7 +71,7 @@ exports.createIncome = async (req, res) => {
   }
 };
 
-// ✅ Get all incomes for a user
+// Get all incomes for a user
 exports.getIncomes = async (req, res) => {
   try {
     const { 
@@ -135,7 +135,7 @@ exports.getIncomes = async (req, res) => {
   }
 };
 
-// ✅ Get a single income by ID
+// Get a single income by ID
 exports.getIncomeById = async (req, res) => {
   try {
     const income = await Income.findOne({ 
@@ -167,7 +167,7 @@ exports.getIncomeById = async (req, res) => {
   }
 };
 
-// ✅ Update an income
+// Update an income
 exports.updateIncome = async (req, res) => {
   try {
     // Map field names if needed
@@ -241,7 +241,7 @@ exports.updateIncome = async (req, res) => {
   }
 };
 
-// ✅ Delete an income
+// Delete an income
 exports.deleteIncome = async (req, res) => {
   try {
     const deleted = await Income.findOneAndDelete({ 
@@ -279,7 +279,7 @@ exports.deleteIncome = async (req, res) => {
   }
 };
 
-// ✅ Get income statistics
+// Get income statistics
 exports.getIncomeStats = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
@@ -338,7 +338,7 @@ exports.getIncomeStats = async (req, res) => {
   }
 };
 
-// ✅ Get recent incomes
+// Get recent incomes
 exports.getRecentIncomes = async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 5;
