@@ -110,30 +110,20 @@ process.on('uncaughtException', (err) => {
   process.exit(1);
 });
 
-// Start server
-const startServer = async () => {
-  try {
-    await connectDB();
+// Start HTTP server immediately so the container binds to the PORT quickly (Cloud Run health checks)
+const server = app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+});
 
-    const server = app.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`🔗 API Base URL: http://localhost:${PORT}/api`);
-    });
-
-    // Graceful shutdown
-    process.on('SIGTERM', () => {
-      console.log('SIGTERM received, shutting down gracefully');
-      server.close(() => {
-        console.log('Process terminated');
-      });
-    });
-
-  } catch (error) {
-    console.error('Failed to start server:', error);
-    process.exit(1);
-  }
-};
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully');
+  server.close(() => {
+    console.log('Process terminated');
+    // Note: Do not call process.exit here; let platform manage restart if needed
+  });
+});
 
 // Connect to MongoDB in the background. Don't exit the process on initial DB failure so the container can start and
 // be retried by the platform or recover when DB becomes available.
@@ -141,4 +131,4 @@ connectDB().catch((error) => {
   console.error('Initial MongoDB connection failed (process will continue):', error);
 });
 
-module.exports 
+module.exports = app;
