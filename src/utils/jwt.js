@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken');
 // Generate access token (short-lived)
 const generateAccessToken = (payload) => {
   return jwt.sign(payload, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN || '15m',
+    expiresIn: process.env.JWT_EXPIRES_IN || '2d',
     issuer: 'expensewise-api',
     audience: 'expensewise-app'
   });
