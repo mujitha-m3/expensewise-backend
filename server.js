@@ -19,7 +19,7 @@ const {
 const { errorHandler } = require('./src/middleware');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 8080;
 
 // Security middleware
 app.use(helmet());
@@ -89,21 +89,15 @@ const connectDB = async () => {
   }
 };
 
-// Start server
-const startServer = async () => {
-  try {
-    await connectDB();
+// Start HTTP server immediately so the container binds to the PORT quickly (Cloud Run health checks)
+const server = app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
 
-    const server = app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-    });
-
-  } catch (error) {
-    console.error('Failed to start server:', error);
-    process.exit(1);
-  }
-};
-
-startServer();
+// Connect to MongoDB in the background. Don't exit the process on initial DB failure so the container can start and
+// be retried by the platform or recover when DB becomes available.
+connectDB().catch((error) => {
+  console.error('Initial MongoDB connection failed (process will continue):', error);
+});
 
 module.exports = app;
