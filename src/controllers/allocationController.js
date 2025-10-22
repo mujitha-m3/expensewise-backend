@@ -7,6 +7,7 @@ exports.getAllocations = async (req, res) => {
     
     console.log('Getting allocations for user:', userId);
     
+    // This checks if user ID was provided in the request
     if (!userId) {
       return res.status(400).json({ 
         success: false, 
@@ -14,7 +15,7 @@ exports.getAllocations = async (req, res) => {
       });
     }
 
-    // Validate userId format
+    // This makes sure the user ID is in correct format (not empty string)
     if (typeof userId !== 'string' || userId.length < 1) {
       return res.status(400).json({
         success: false,
@@ -22,6 +23,7 @@ exports.getAllocations = async (req, res) => {
       });
     }
 
+    // This finds all active budget allocations for this user, newest first
     const allocations = await Allocation.find({ 
       userId: userId, 
       isActive: true 
@@ -36,6 +38,7 @@ exports.getAllocations = async (req, res) => {
     });
   } catch (error) {
     console.error('Error getting allocations:', error);
+    // This handles server errors and shows error details only in development
     res.status(500).json({
       success: false,
       message: 'Server error while fetching allocations',
@@ -47,6 +50,7 @@ exports.getAllocations = async (req, res) => {
 // Create new allocation
 exports.createAllocation = async (req, res) => {
   try {
+    // This gets all the data from the request body
     const {
       userId,
       categoryId,
@@ -67,7 +71,7 @@ exports.createAllocation = async (req, res) => {
       bucketName
     });
 
-    // Validate required fields
+     // This validates that all required fields are provided
     if (!userId || !categoryName || percentage === undefined || !templateId) {
       return res.status(400).json({
         success: false,
@@ -75,7 +79,7 @@ exports.createAllocation = async (req, res) => {
       });
     }
 
-    // Check if allocation already exists for this template
+    // This checks if an allocation already exists with same template (prevents duplicates)
     const existingAllocation = await Allocation.findOne({ 
       userId, 
       templateId 
@@ -88,6 +92,7 @@ exports.createAllocation = async (req, res) => {
       });
     }
 
+     // This creates a new allocation object with all the provided data
     const allocation = new Allocation({
       userId,
       categoryId,
@@ -101,7 +106,7 @@ exports.createAllocation = async (req, res) => {
     await allocation.save();
 
     console.log('Allocation created successfully:', allocation._id);
-
+    // This sends success response with the created allocation
     res.status(201).json({
       success: true,
       message: 'Allocation created successfully',
@@ -120,6 +125,7 @@ exports.createAllocation = async (req, res) => {
 // Update allocation
 exports.updateAllocation = async (req, res) => {
   try {
+    // This gets the allocation ID from the URL parameters
     const { id } = req.params;
     const {
       categoryId,
@@ -136,7 +142,7 @@ exports.updateAllocation = async (req, res) => {
     });
 
     const allocation = await Allocation.findById(id);
-
+// This checks if the allocation was found
     if (!allocation) {
       return res.status(404).json({
         success: false,
@@ -144,7 +150,7 @@ exports.updateAllocation = async (req, res) => {
       });
     }
 
-    // Update fields
+     // This updates only the fields that were provided in the request
     if (categoryName !== undefined) allocation.categoryName = categoryName;
     if (categoryId !== undefined) allocation.categoryId = categoryId;
     if (percentage !== undefined) allocation.percentage = percentage;
@@ -172,10 +178,11 @@ exports.updateAllocation = async (req, res) => {
 // Delete allocation (HARD delete)
 exports.deleteAllocation = async (req, res) => {
     try {
+      // This gets the allocation ID from URL parameters
       const { id } = req.params;
   
       console.log('Deleting allocation:', id);
-  
+  // This finds the allocation by ID and deletes it permanently from database
       const allocation = await Allocation.findByIdAndDelete(id);
   
       if (!allocation) {
@@ -204,6 +211,7 @@ exports.deleteAllocation = async (req, res) => {
 // Get allocation by template ID (for sync purposes)
 exports.getAllocationByTemplateId = async (req, res) => {
   try {
+     // This gets template ID from URL parameters (used for syncing between devices)
     const { templateId } = req.params;
 
     console.log('Getting allocation by template ID:', templateId);
@@ -213,6 +221,7 @@ exports.getAllocationByTemplateId = async (req, res) => {
       isActive: true 
     });
 
+    // This checks if allocation was found
     if (!allocation) {
       return res.status(404).json({
         success: false,
@@ -237,10 +246,11 @@ exports.getAllocationByTemplateId = async (req, res) => {
 // Bulk operations for sync
 exports.bulkUpdateAllocations = async (req, res) => {
   try {
+    // This gets array of operations from request body (for syncing multiple changes)
     const { operations } = req.body;
 
     console.log('Bulk operations requested:', operations);
-
+// This validates that operations is an array
     if (!Array.isArray(operations)) {
       return res.status(400).json({
         success: false,
@@ -250,18 +260,21 @@ exports.bulkUpdateAllocations = async (req, res) => {
 
     const results = [];
 
+    // This loops through each operation and processes it
     for (const operation of operations) {
       try {
         const { action, data } = operation;
 
         switch (action) {
           case 'create':
+            // This creates a new allocation
             const newAllocation = new Allocation(data);
             await newAllocation.save();
             results.push({ action: 'create', success: true, id: newAllocation._id });
             break;
 
           case 'update':
+            // This updates an existing allocation
             const updatedAllocation = await Allocation.findByIdAndUpdate(
               data._id,
               { $set: data },
@@ -291,6 +304,7 @@ exports.bulkUpdateAllocations = async (req, res) => {
             results.push({ action, success: false, error: 'Unknown action' });
         }
       } catch (opError) {
+        // This catches errors in individual operations but continues with others
         console.error('Error in bulk operation:', opError);
         results.push({ action: operation.action, success: false, error: opError.message });
       }

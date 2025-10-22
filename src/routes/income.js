@@ -7,16 +7,17 @@ const router = express.Router();
 // Get all income records for authenticated user
 router.get("/", authMiddleware, async (req, res) => {
   try {
+    //pagination
     const { page = 1, limit = 20, category, startDate, endDate, search } = req.query;
     
     const query = { userId: req.userId };
     
-    // Add category filter
+    // Add category filter - user selected
     if (category) {
       query.category = category;
     }
     
-    // Add date range filter
+    // Add date range filter - user provided
     if (startDate || endDate) {
       query.date = {};
       if (startDate) query.date.$gte = new Date(startDate);

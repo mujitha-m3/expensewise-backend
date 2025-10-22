@@ -16,18 +16,18 @@ exports.createIncome = async (req, res) => {
       notes 
     } = req.body;
 
-    // income validation
+     // This validation ensures users must provide source and amount
     if (!source || !amount) {
       return res.status(400).json({ message: "Source and amount are required" });
     }
 
-    // Validate amount is positive
+    // This prevents users from entering negative or zero amounts
     if (amount <= 0) {
       return res.status(400).json({ message: "Amount must be greater than 0" });
     }
 
     const newIncome = new Income({
-      userId: req.user?.id,
+      userId: req.user?.id,// This automatically links income to logged-in user
       source,
       amount,
       date: startDate || new Date(), // Map startDate to date field, use current date if not provided
@@ -71,7 +71,7 @@ exports.createIncome = async (req, res) => {
   }
 };
 
-// Get all incomes for a user
+// Get all incomes for a user with filtering and pagination
 exports.getIncomes = async (req, res) => {
   try {
     const { 
@@ -84,22 +84,22 @@ exports.getIncomes = async (req, res) => {
       sortOrder = 'desc'
     } = req.query;
 
-    // Build filter object
+    // This filter ensures users only see their own incomes
     const filter = { userId: req.user.id };
     
-    // Add category filter if provided
+    // This lets users filter by category if provided
     if (category) {
       filter.category = category;
     }
     
-    // Add date range filter if provided
+    // This allows date range filtering for specific periods
     if (startDate || endDate) {
       filter.date = {};
       if (startDate) filter.date.$gte = new Date(startDate);
       if (endDate) filter.date.$lte = new Date(endDate);
     }
 
-    // Calculate pagination
+    // This calculates how many records to skip for pagination
     const skip = (parseInt(page) - 1) * parseInt(limit);
     
     // Build sort object
