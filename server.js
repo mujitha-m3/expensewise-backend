@@ -67,6 +67,11 @@ app.get('/', (req, res) => {
   });
 });
 
+// Readiness probe (simple and fast)
+app.get('/ready', (req, res) => {
+  res.status(200).send('OK');
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({
@@ -111,8 +116,9 @@ process.on('uncaughtException', (err) => {
 });
 
 // Start HTTP server immediately so the container binds to the PORT quickly (Cloud Run health checks)
-const server = app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+// Explicitly bind to 0.0.0.0 to avoid any ambiguity between IPv4/IPv6 listeners.
+const server = app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server listening on 0.0.0.0:${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
 });
 
