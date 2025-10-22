@@ -20,7 +20,7 @@ const {
 const { errorHandler } = require('./src/middleware');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 8080;
 
 // Security middleware
 app.use(helmet());
@@ -67,6 +67,11 @@ app.get('/', (req, res) => {
   });
 });
 
+// Readiness probe (simple and fast)
+app.get('/ready', (req, res) => {
+  res.status(200).send('OK');
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({
@@ -110,31 +115,26 @@ process.on('uncaughtException', (err) => {
   process.exit(1);
 });
 
-// Start server
-const startServer = async () => {
-  try {
-    await connectDB();
+// Start HTTP server immediately so the container binds to the PORT quickly (Cloud Run health checks)
+// Explicitly bind to 0.0.0.0 to avoid any ambiguity between IPv4/IPv6 listeners.
+const server = app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server listening on 0.0.0.0:${PORT}`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+});
 
-    const server = app.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`🔗 API Base URL: http://localhost:${PORT}/api`);
-    });
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully');
+  server.close(() => {
+    console.log('Process terminated');
+    // Note: Do not call process.exit here; let platform manage restart if needed
+  });
+});
 
-    // Graceful shutdown
-    process.on('SIGTERM', () => {
-      console.log('SIGTERM received, shutting down gracefully');
-      server.close(() => {
-        console.log('Process terminated');
-      });
-    });
-
-  } catch (error) {
-    console.error('Failed to start server:', error);
-    process.exit(1);
-  }
-};
-
-startServer();
+// Connect to MongoDB in the background. Don't exit the process on initial DB failure so the container can start and
+// be retried by the platform or recover when DB becomes available.
+connectDB().catch((error) => {
+  console.error('Initial MongoDB connection failed (process will continue):', error);
+});
 
 module.exports = app;

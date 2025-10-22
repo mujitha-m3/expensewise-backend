@@ -9,6 +9,7 @@ const {
   removeAllRefreshTokens
 } = require('../utils/jwt');
 const validator = require('validator');
+const { User } = require('../models');
 
 class AuthController {
   // Register new user
@@ -363,45 +364,52 @@ class AuthController {
   // Update user profile
   async updateProfile(req, res) {
     try {
-      const userId = req.user.id;
-      const { name, currency } = req.body;
+      const { name, email, currency, financial_goals, monthlyBudget, monthlyIncome } = req.body;
+      
+      // Handle both req.user.id and req.user._id (depending on authMiddleware implementation)
+      const userId = req.user.id || req.user._id || req.user.userId;
+      
+      console.log('Profile update request:', { userId, body: req.body });
 
-      // Validate input
-      if (name && name.trim().length < 2) {
-        return res.status(400).json({
-          success: false,
-          message: 'Name must be at least 2 characters long',
-          errors: { name: 'Name is too short' }
+      if (!userId) {
+        return res.status(401).json({ 
+          success: false, 
+          message: 'User not authenticated' 
         });
       }
 
-      const updatedUser = await userService.updateUser(userId, {
-        name: name?.trim(),
-        currency
-      });
+      // Update user in database
+      const updatedUser = await User.findByIdAndUpdate(
+        userId,
+        {
+          name: name,
+          email: email,
+          currency: currency,
+          financial_goals: financial_goals,
+          monthlyBudget: monthlyBudget,
+          monthlyIncome: monthlyIncome
+        },
+        { new: true, runValidators: true }
+      ).select('-password'); // Don't send password back
+
+      if (!updatedUser) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'User not found' 
+        });
+      }
 
       res.json({
         success: true,
-        message: 'Profile updated successfully',
-        data: {
-          user: {
-            id: updatedUser.id,
-            email: updatedUser.email,
-            name: updatedUser.name,
-            currency: updatedUser.currency,
-            emailVerified: updatedUser.email_verified,
-            updatedAt: updatedUser.updated_at
-          }
-        }
+        user: updatedUser,
+        message: 'Profile updated successfully'
       });
-
     } catch (error) {
-      console.error('Update profile error:', error);
-      
-      res.status(500).json({
-        success: false,
-        message: 'Error updating user profile',
-        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      console.error('Profile update error:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Failed to update profile',
+        error: error.message 
       });
     }
   }

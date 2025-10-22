@@ -1,6 +1,6 @@
 const Income = require("../models/Income");
 
-// income creation function
+// Create a new income
 exports.createIncome = async (req, res) => {
   try {
     const { 
